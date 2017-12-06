@@ -24,12 +24,16 @@
 		void Destroy()
 			Disconnects all connected events to the signal and voids the signal as unusable.
 --]]
+local error = error
+local unpack = unpack
+local setmetatable = setmetatable
+local Instance = Instance local Instance_new = Instance.new
 
-local Signal = {}
+local Signal = { }
 Signal.__index = Signal
 
 function Signal:Fire(...)
-	self.BindData = {...}
+	self.BindData = { ... }
 	self.BindableEvent:Fire()
 end
 
@@ -59,10 +63,7 @@ function Signal:Destroy()
 end
 
 function Signal.new()
-	return setmetatable({
-		BindableEvent = Instance.new("BindableEvent");
-		Connections = {};
-	}, Signal)
+	return setmetatable({ BindableEvent = Instance_new("BindableEvent"), Connections = { } }, Signal)
 end
 
 return Signal
