@@ -1,7 +1,13 @@
 -- Object for managing Cleanup
 -- @readme https://github.com/RoStrap/Events#maid
+local wait = wait
+local typeof = typeof
+local pairs = pairs
+local setmetatable = setmetatable
+local coroutine = coroutine local yield = coroutine.yield
+local Instance = Instance local Instance_new = Instance.new
 
-local Maid = {}
+local Maid = { }
 
 -- Maid[key] = (function)            Adds a function to call at cleanup
 -- Maid[key] = (Instance)            Adds an Object to be Destroyed at cleanup
@@ -13,7 +19,7 @@ local Maid = {}
 --- Generates a new Maid object
 -- @return Maid
 function Maid.new()
-	return setmetatable({_Tasks = {}}, Maid)
+	return setmetatable({ _Tasks = { } }, Maid)
 end
 
 --- Gives the Maid a Task to perform at cleanup, incremented by 1
@@ -30,7 +36,7 @@ end
 -- @returns Disconnectable table to stop Maid from being cleaned up upon Instance Destroy (automatically cleaned up by Maid, btw)
 -- @author Corecii
 
-local Disconnect = {Connected = true}
+local Disconnect = { Connected = true }
 Disconnect.__index = Disconnect
 function Disconnect:Disconnect()
 	self.Connected = false
@@ -38,12 +44,12 @@ function Disconnect:Disconnect()
 end
 
 function Maid:LinkToInstance(Object)
-	local Reference = Instance.new("ObjectValue")
+	local Reference = Instance_new("ObjectValue")
 	Reference.Value = Object
 	-- ObjectValues have weak-like Instance references
 	-- If the Instance can no longer be accessed then it can be collected despite
 	--  the ObjectValue having a reference to it
-	local ManualDisconnect = setmetatable({}, Disconnect)
+	local ManualDisconnect = setmetatable({ }, Disconnect)
 	local Connection
 	local function ChangedFunction(Obj, Par)
 		if not Reference.Value then
@@ -51,7 +57,7 @@ function Maid:LinkToInstance(Object)
 			return self:DoCleaning()
 		elseif Obj == Reference.Value and not Par then
 			Obj = nil
-			coroutine.yield()  -- Push further execution of this script to the end of the current execution cycle
+			yield()  -- Push further execution of this script to the end of the current execution cycle
 					  --  This is needed because when the event first runs it's always still Connected
 			-- The object may have been reparented or the event manually disconnected or disconnected and ran in that time...
 			if (not Reference.Value or not Reference.Value.Parent) and ManualDisconnect.Connected then
@@ -87,7 +93,7 @@ function Maid:LinkToInstance(Object)
 	-- We need to spawn a new Roblox Lua thread right now before any other code runs.
 	--  spawn() starts it on the next cycle or frame, coroutines don't have ROBLOX's coroutine.yield handler
 	--  The only option left is BindableEvents, which run as soon as they are called and use ROBLOX's yield
-	local QuickRobloxThreadSpawner = Instance.new("BindableEvent")
+	local QuickRobloxThreadSpawner = Instance_new("BindableEvent")
 	QuickRobloxThreadSpawner.Event:Connect(ChangedFunction)
 	QuickRobloxThreadSpawner:Fire(Reference.Value, Reference.Value.Parent)
 	QuickRobloxThreadSpawner:Destroy()
@@ -100,7 +106,7 @@ end
 -- This Disconnects RBXScriptConnections, Destroys Instances, and calls Functions/callable Tables
 function Maid:DoCleaning()
 	local Tasks = self._Tasks
-	for Name, Task in next, Tasks do
+	for Name, Task in pairs(Tasks) do
 		local Type = typeof(Task)
 		local IsTable = Type == "table"
 		if Type == "RBXScriptConnection" or IsTable and Task.Disconnect then
